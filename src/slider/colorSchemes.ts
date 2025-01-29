@@ -1,3 +1,4 @@
+// 3 color schemes: 'orange', 'red' and 'green'
 const ColorSchemes = {
     orange: {
         sliderLight: 'rgba(37, 37, 47, 1)',

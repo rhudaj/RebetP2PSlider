@@ -2,6 +2,9 @@ import Lottie from "lottie-react";
 import glowingCircle from "./AnimatedAssets/glowing_circle.json"; // Adjust the path as needed
 import glowingLeftArrows from "./AnimatedAssets/glowing_left_arrows.json"; // Adjust the path as needed
 
+/**
+ * Lottie animation component for a growing circle animation.
+ */
 export function GlowingCircle() {
     return (
         <Lottie
@@ -12,6 +15,10 @@ export function GlowingCircle() {
     )
 }
 
+/**
+ * Lottie animation component for a glowing arrows
+ * @param isLeft sets the orientation of the arrows.
+ */
 export function GlowingArrows(props: {isLeft: boolean}) {
     // flip the orientation if `isLeft` is false
     const style = { transform: `scale(${2 * (props.isLeft?1:-1)})` }

@@ -26,6 +26,11 @@ const StaticAsset = (props: {subFolder: string, color: string, id?: string, flip
 
 const CENTER = 50;  // percent out of "100% of the width"
 
+/**
+ * Slider component
+ * @param onSlideLeft handles the case where the slider goes all the way left
+ * @param onSlideLeft handles the case where the slider goes all the way right
+ */
 function Slider(props: {
     onSlideLeft?: () => void;
     onSlideRight?: () => void;
@@ -34,12 +39,19 @@ function Slider(props: {
     // ---------------------- STATE ----------------------
 
     const [orbPos, setOrbPos] = React.useState<number>(CENTER); // Percentage position (50 = center)
-    const [isDrag, setIsDrag] = React.useState<boolean>(false);
+    const [isDrag, setIsDrag] = React.useState<boolean>(false); // wether/not the orb is being dragged by the user
 
+    // References so that we can keep track of boundingRect size
     const sliderRef = React.useRef<HTMLDivElement>(null);
     const orbRef = React.useRef<HTMLDivElement>(null);
 
-    const snapbackAnimation = useSnapBack(CENTER, undefined, setOrbPos, () => setIsDrag(false)); // Snap back to center (50%)
+    // A custom animation that snaps back the orb to CENTER pos
+    const snapbackAnimation = useSnapBack(
+        CENTER,                 // Snap back to center (50%)
+        undefined,              // no options (use defaults)
+        setOrbPos,              // called when position updates
+        () => setIsDrag(false)  // called when the animation is done
+    );
 
     // ---------------------- CONTROLS ----------------------
 
@@ -78,14 +90,14 @@ function Slider(props: {
 
     // ------------------------ VIEW -------------------------
 
-    // Stylong depends on which side the orb lies
+    // The color scheme for styling depends on which side the orb lies
     const colorScheme =
         (!isDrag || orbPos === CENTER) ? "orange" :
         orbPos < CENTER ? "red" : "green"
 
     const CurStyles = ColorSchemes[colorScheme];
 
-    // Static/Animated depends on `isDrag`
+    // Wether we show Static/Animated assets depends on `isDrag`
     const Assets = {
         // Default items (don't depend on `isDrag` status):
         check: <StaticAsset id="check-img" subFolder='check' color={colorScheme==='orange'?'white':colorScheme} />,
@@ -125,9 +137,10 @@ function Slider(props: {
             onMouseUp={handleDragEnd}
             onMouseLeave={handleDragEnd}
         >
-            {/* New div for the background gradient (replaces ::after) */}
+            {/* div for the background gradient (replaces ::after) */}
             <span id="slider-border" style={{backgroundImage: `linear-gradient(to right, ${CurStyles.sliderBorderLight}, ${CurStyles.sliderBorderDark}, ${CurStyles.sliderBorderLight})`}}/>
 
+            {/* the draggable orb (relative to parent div) */}
             <div
                 id="orb"
                 ref={orbRef}
@@ -136,6 +149,8 @@ function Slider(props: {
             >
                 {Assets.orb}
             </div>
+
+            {/* The rest are items that fit in the div layout */}
 
             <div id="lhs">
                 {Assets.check}
