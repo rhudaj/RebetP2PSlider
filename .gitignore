@@ -1,6 +1,8 @@
 # Created by https://www.toptal.com/developers/gitignore/api/node,visualstudio,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=node,visualstudio,visualstudiocode
 
+.DS_Store
+
 ### Node ###
 # Logs
 logs
