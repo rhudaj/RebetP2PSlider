@@ -21,11 +21,13 @@
     z-index: -1             // put behind
     inset: 0                // center around
 
+// Accept / Decline boxes
 #lhs, #rhs
     display: flex
     gap: 1em
     align-items: center
 
+// The draggable orb
 #orb
     height: 100%
     aspect-ratio: 1 / 1         // square shape
@@ -36,7 +38,8 @@
     &:hover
         cursor: grab
 
-
+p
+    font-size: 18px
 
 // Static Assets
 
@@ -49,6 +52,7 @@
         height: 100%
         object-fit: contain
 
+// scale the images so they fit better (without having to manually crop)
 
 #left-arrows-img, #right-arrows-img
     transform: scale(1.9) // fit the image approraitely

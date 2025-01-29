@@ -138,7 +138,10 @@ function Slider(props: {
             onMouseLeave={handleDragEnd}
         >
             {/* div for the background gradient (replaces ::after) */}
-            <span id="slider-border" style={{backgroundImage: `linear-gradient(to right, ${CurStyles.sliderBorderLight}, ${CurStyles.sliderBorderDark}, ${CurStyles.sliderBorderLight})`}}/>
+            <span
+                id="slider-border"
+                style={{backgroundImage: `linear-gradient(to right, ${CurStyles.sliderBorderLight}, ${CurStyles.sliderBorderDark}, ${CurStyles.sliderBorderLight})`}}
+            />
 
             {/* the draggable orb (relative to parent div) */}
             <div
@@ -153,15 +156,15 @@ function Slider(props: {
             {/* The rest are items that fit in the div layout */}
 
             <div id="lhs">
-                {Assets.check}
-                <div className="text">Decline</div>
+                {Assets.close}
+                <p>Decline</p>
             </div>
 
             {Assets.arrows}
 
             <div id="rhs">
-                {Assets.close}
-                <div className="text">Accept</div>
+                {Assets.check}
+                <p>Accept</p>
             </div>
         </div>
     );
