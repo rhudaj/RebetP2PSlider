@@ -72,102 +72,76 @@ const ImageContainer = (props: {src: string, id?: string}) => (
     </div>
 );
 
-
-const CENTER = 50;
-
 export default function Slider(props: {
-    onSlideLeft?: ()=>void,
-    onSlideRight?: ()=>void,
+    onSlideLeft?: () => void;
+    onSlideRight?: () => void;
 }) {
-
-    const [orbPos, setOrbPos] = useState<number>(0);
+    const [orbPos, setOrbPos] = useState<number>(50); // Percentage position (50 = center)
     const [isDrag, setIsDrag] = useState<boolean>(false);
-    const [side, setSide] = useState<number>(0); // 0 => center, -1 => left, +1 => right
-    const [dragOffset, setDragOffset] = useState<number>(0); // Offset between cursor and orb's position
-
-    const [orbWidth, setOrbWidth] = useState<number>(0);
+    const [side, setSide] = useState<number>(0); // -1 = left, 1 = right, 0 = center
 
     const sliderRef = useRef<HTMLDivElement>(null);
     const orbRef = useRef<HTMLDivElement>(null);
 
-    const snapbackAnimation = useSnapBack(CENTER, 1000, setOrbPos, ()=>setIsDrag(false));
+    const snapbackAnimation = useSnapBack(50, 1000, setOrbPos, () => setIsDrag(false)); // Snap back to center (50%)
 
-    useEffect(()=>{
-        const orbRect = orbRef.current.getBoundingClientRect();
-        setOrbWidth(orbRect.right - orbRect.left);
-    }, [orbRef])
-
-    useEffect(()=>{
-        const bounds = sliderRef.current.getBoundingClientRect();
-        const W = bounds.right - bounds.left
-        const center = (W - orbWidth) / 2
-        const center_pct = center / W
-        console.log(`W = ${W}, orbWidth = ${orbWidth} => orbWidth/W = ${orbWidth/W} => center_pct = ${center_pct}`);
-        setOrbPos(center_pct * 100)
-    }, [orbWidth])
-
-    useEffect(()=>{
-        if(!isDrag) return;
-        setSide( orbPos < CENTER ? -1 : 1 )
+    useEffect(() => {
+        if (!isDrag) return;
+        setSide(orbPos < 50 ? -1 : 1);
     }, [orbPos]);
 
     const handleDragStart = (e: MouseEvent) => {
-        console.log("drag START")
+        console.log("drag START");
         setIsDrag(true);
-        // Calculate the offset between the cursor and the orb's left edge
-        const orbRect = orbRef.current.getBoundingClientRect();
-        const offset = e.clientX - orbRect.left;
-        setDragOffset(offset);
     };
 
-    const handleDragEnd = (e: MouseEvent) => {
+    const handleDragEnd = () => {
         snapbackAnimation.start(orbPos);
         setSide(0);
         setIsDrag(false);
     };
 
     const handleDrag = (e: MouseEvent) => {
+        if (!isDrag || !sliderRef.current || !orbRef.current) return;
 
-        if(!isDrag) return;
-
+        // Calculate new position as percentage relative to the slider's width
         const bounds = sliderRef.current.getBoundingClientRect();
+        let newLeft = ((e.clientX - bounds.left) / bounds.width) * 100;
 
-        let newLeft = e.clientX - bounds.left - dragOffset;
-
-        // Clamp the position within the slider's boundaries
-        const min_x = 0;
-        const max_x = bounds.width - orbWidth;
-        if (newLeft < min_x) {
-            newLeft = min_x;
-            // Call the callback
+        // Clamp position between 0% and 100%
+        if (newLeft < 0) {
+            newLeft = 0;
             props.onSlideLeft?.();
-        } else if (newLeft > max_x) {
-            newLeft = max_x;
+        } else if (newLeft > 100) {
+            newLeft = 100;
             props.onSlideRight?.();
         }
 
-        // Set position as a percentage
-        setOrbPos(newLeft / bounds.width * 100);
+        setOrbPos(newLeft);
     };
 
-
-    // The styling depends on the side the orb lies.
-    const Styles = (side===-1) ? {
-        slider_class: "lhs-active",
-        orb_color: "green",
-        close_color: "green",
-        check_color: "green",
-    } : (side === 1) ? {
-        slider_class: "rhs-active",
-        orb_color: "red",
-        close_color: "red",
-        check_color: "red",
-    } : {
-        slider_class: "",
-        orb_color: "orange",
-        close_color: "white",
-        check_color: "white",
-    }
+    // The styling depends on the side the orb lies
+    const Styles =
+        side === -1
+            ? {
+                  slider_class: "lhs-active",
+                  orb_color: "green",
+                  close_color: "green",
+                  check_color: "green",
+              }
+            : side === 1
+            ? {
+                  slider_class: "rhs-active",
+                  orb_color: "red",
+                  close_color: "red",
+                  check_color: "red",
+              }
+            : {
+                  slider_class: "",
+                  orb_color: "orange",
+                  close_color: "white",
+                  check_color: "white",
+              };
 
     return (
         <div
@@ -176,28 +150,35 @@ export default function Slider(props: {
             ref={sliderRef}
             onMouseMove={handleDrag}
             onMouseUp={handleDragEnd}
-            onMouseLeave={()=>setIsDrag(false)}
+            onMouseLeave={() => setIsDrag(false)}
         >
             <div
                 id="drag-orb"
                 ref={orbRef}
                 onMouseDown={handleDragStart}
-                style={{left: `${orbPos}%`}}
+                style={{ left: `${orbPos}%`, transform: "translate(-50%)" }}
             >
-                <ImageContainer id="orb-img" src={`StaticAssets/${Styles.orb_color}_button.png`}/>
+                <ImageContainer
+                    id="orb-img"
+                    src={`StaticAssets/${Styles.orb_color}_button.png`}
+                />
             </div>
             <div id="slider-sides">
                 <div className="lhs">
-                    <ImageContainer src={`StaticAssets/${Styles.close_color}_close.png`}/>
+                    <ImageContainer
+                        src={`StaticAssets/${Styles.close_color}_close.png`}
+                    />
                     <div className="text">Decline</div>
                 </div>
-                <GlowingLeftArrows/>
-                <GlowingRightArrows/>
+                <GlowingLeftArrows />
+                <GlowingRightArrows />
                 <div className="rhs">
-                    <ImageContainer src={`StaticAssets/${Styles.check_color}_check.png`}/>
+                    <ImageContainer
+                        src={`StaticAssets/${Styles.check_color}_check.png`}
+                    />
                     <div className="text">Accept</div>
                 </div>
             </div>
         </div>
-    )
-};
+    );
+}
