@@ -72,23 +72,20 @@ const ImageContainer = (props: {src: string, id?: string}) => (
     </div>
 );
 
+const CENTER = 50;  // percent out of 100
+const SNAP_TIME = 1000;
+
 export default function Slider(props: {
     onSlideLeft?: () => void;
     onSlideRight?: () => void;
 }) {
-    const [orbPos, setOrbPos] = useState<number>(50); // Percentage position (50 = center)
+    const [orbPos, setOrbPos] = useState<number>(CENTER); // Percentage position (50 = center)
     const [isDrag, setIsDrag] = useState<boolean>(false);
-    const [side, setSide] = useState<number>(0); // -1 = left, 1 = right, 0 = center
 
     const sliderRef = useRef<HTMLDivElement>(null);
     const orbRef = useRef<HTMLDivElement>(null);
 
-    const snapbackAnimation = useSnapBack(50, 1000, setOrbPos, () => setIsDrag(false)); // Snap back to center (50%)
-
-    useEffect(() => {
-        if (!isDrag) return;
-        setSide(orbPos < 50 ? -1 : 1);
-    }, [orbPos]);
+    const snapbackAnimation = useSnapBack(CENTER, SNAP_TIME, setOrbPos, () => setIsDrag(false)); // Snap back to center (50%)
 
     const handleDragStart = (e: MouseEvent) => {
         console.log("drag START");
@@ -97,11 +94,10 @@ export default function Slider(props: {
 
     const handleDragEnd = () => {
         snapbackAnimation.start(orbPos);
-        setSide(0);
         setIsDrag(false);
     };
 
-    const handleDrag = (e: MouseEvent) => {
+    const handleMouseMove = (e: MouseEvent) => {
         if (!isDrag || !sliderRef.current || !orbRef.current) return;
 
         // Calculate new position as percentage relative to the slider's width
@@ -122,33 +118,29 @@ export default function Slider(props: {
 
     // The styling depends on the side the orb lies
     const Styles =
-        side === -1
-            ? {
-                  slider_class: "lhs-active",
-                  orb_color: "green",
-                  close_color: "green",
-                  check_color: "green",
-              }
-            : side === 1
-            ? {
-                  slider_class: "rhs-active",
-                  orb_color: "red",
-                  close_color: "red",
-                  check_color: "red",
-              }
-            : {
-                  slider_class: "",
-                  orb_color: "orange",
-                  close_color: "white",
-                  check_color: "white",
-              };
+        !isDrag || orbPos === CENTER ? {
+            slider_class: "",
+            orb_color: "orange",
+            close_color: "white",
+            check_color: "white",
+        } : orbPos < CENTER ? {
+            slider_class: "lhs-active",
+            orb_color: "red",
+            close_color: "red",
+            check_color: "red",
+        } : {
+            slider_class: "rhs-active",
+            orb_color: "green",
+            close_color: "green",
+            check_color: "green",
+        }
 
     return (
         <div
             id="slider"
             className={Styles.slider_class}
             ref={sliderRef}
-            onMouseMove={handleDrag}
+            onMouseMove={handleMouseMove}
             onMouseUp={handleDragEnd}
             onMouseLeave={() => setIsDrag(false)}
         >
