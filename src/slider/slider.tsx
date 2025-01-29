@@ -1,94 +1,53 @@
-import { MouseEvent, useEffect, useRef, useState } from "react"
+import React from "react"
 import "./slider.sass"
-import { GlowingCircle, GlowingLeftArrows, GlowingRightArrows } from "../animations/Animations";
+import { GlowingCircle, GlowingArrows } from "../animations/LottieAnimations";
+import { useSnapBack } from "../animations/snapBack";
+import ColorSchemes from "./colorSchemes";
 
-const useSnapBack = (
-    targetPos: number,
-    time?: number,
-    onPosUpdate?: (pos: number)=>void,
-    onFinished?: ()=>void,
-) => {
+const asset_folder = "StaticAssets"; // relative to public/
 
-    const [pos, setPos] = useState(null);
-
-    time = time ?? 1000; // Default to 50 ms
-    const interval = 16; // 16 ms for roughly 60 FPS
-    const steps = Math.ceil(time / interval); // Number of steps for the animation
-    const stepIndexRef = useRef(0); // To track the current step
-    const animationRef = useRef(null); // For clearing animation when necessary
-
-    const SLOW_DOWN = 0.5;
-    const DAMP_RATE = 2;
-    const MOMENTUM = 5;
-
-    useEffect(()=>{
-        if(!pos) return;
-        onPosUpdate(pos);
-    }, [pos])
-
-    const factor = (t: number) => SLOW_DOWN * Math.exp(-DAMP_RATE*t) * Math.cos(MOMENTUM*t);
-
-    const start = (initPos: number) => {
-
-        if (animationRef.current) {
-            clearTimeout(animationRef.current); // Clear any ongoing animation
-        }
-
-        const diff = targetPos - initPos; // Distance to cover
-        stepIndexRef.current = 0; // Reset step index
-
-        let prev = initPos;
-
-        const animate = () => {
-            const stepIndex = stepIndexRef.current;
-            const t = (stepIndex / steps) * Math.PI; // Map step to a value for `factor`
-
-            // Compute new position using `factor` and set it
-            const progress = 1 - factor(t);     // Progress as a value between 0 and 1 (1 at the start)
-            const newPos = initPos + (diff * progress);
-
-            setPos(newPos);
-
-            if (stepIndex < steps) {
-                stepIndexRef.current++;
-                animationRef.current = setTimeout(animate, interval); // Schedule the next frame
-                prev = newPos;
-            } else {
-                setPos(targetPos); // Ensure it snaps exactly to `targetPos` at the end
-                animationRef.current = null;
-                onFinished();
-            }
-        };
-
-        animate();
-    };
-
-    return { start };
+/**
+ * Wrapper for a "StaticAsset" (an image in /public/StaticAssets)
+ * @param subFolder the folder within `asset_folder`
+ * @param color the specific color (e.g. 'orange')
+ * @param flip if we want to flip the image horizontally
+ * @returns container that wraps an image
+ */
+const StaticAsset = (props: {subFolder: string, color: string, id?: string, flip?: boolean}) => {
+    // get the path to find the asset:
+    const src = `${asset_folder}/${props.subFolder}/${props.color}.png`;
+    const style = props.flip ? {transform: "scaleX(-1)"} : null;
+    return (
+        <div className="image-container" id={props.id}>
+            <img draggable={false} src={src} style={style}/>
+        </div>
+    )
 };
 
-const ImageContainer = (props: {src: string, id?: string}) => (
-    <div className="image-container" id={props.id}>
-        <img draggable={false} src={props.src}></img>
-    </div>
-);
+const CENTER = 50;  // percent out of "100% of the width"
 
-const CENTER = 50;  // percent out of 100
-const SNAP_TIME = 1000;
-
-export default function Slider(props: {
+function Slider(props: {
     onSlideLeft?: () => void;
     onSlideRight?: () => void;
 }) {
-    const [orbPos, setOrbPos] = useState<number>(CENTER); // Percentage position (50 = center)
-    const [isDrag, setIsDrag] = useState<boolean>(false);
 
-    const sliderRef = useRef<HTMLDivElement>(null);
-    const orbRef = useRef<HTMLDivElement>(null);
+    // ---------------------- STATE ----------------------
 
-    const snapbackAnimation = useSnapBack(CENTER, SNAP_TIME, setOrbPos, () => setIsDrag(false)); // Snap back to center (50%)
+    const [orbPos, setOrbPos] = React.useState<number>(CENTER); // Percentage position (50 = center)
+    const [isDrag, setIsDrag] = React.useState<boolean>(false);
 
-    const handleDragStart = (e: MouseEvent) => {
-        console.log("drag START");
+    const sliderRef = React.useRef<HTMLDivElement>(null);
+    const orbRef = React.useRef<HTMLDivElement>(null);
+
+    const snapbackAnimation = useSnapBack(CENTER, undefined, setOrbPos, () => setIsDrag(false)); // Snap back to center (50%)
+
+    // ---------------------- CONTROLS ----------------------
+
+    const handleDragStart = (e: React.MouseEvent) => {
+        // cancel the animation if not done
+        if (!snapbackAnimation.isDone) {
+            snapbackAnimation.cancel()
+        }
         setIsDrag(true);
     };
 
@@ -97,7 +56,7 @@ export default function Slider(props: {
         setIsDrag(false);
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMouseMove = (e: React.MouseEvent) => {
         if (!isDrag || !sliderRef.current || !orbRef.current) return;
 
         // Calculate new position as percentage relative to the slider's width
@@ -105,6 +64,7 @@ export default function Slider(props: {
         let newLeft = ((e.clientX - bounds.left) / bounds.width) * 100;
 
         // Clamp position between 0% and 100%
+        // Also, if we've hit an edge, report back to the parent (if specified)
         if (newLeft < 0) {
             newLeft = 0;
             props.onSlideLeft?.();
@@ -116,61 +76,80 @@ export default function Slider(props: {
         setOrbPos(newLeft);
     };
 
-    // The styling depends on the side the orb lies
-    const Styles =
-        !isDrag || orbPos === CENTER ? {
-            slider_class: "",
-            orb_color: "orange",
-            close_color: "white",
-            check_color: "white",
-        } : orbPos < CENTER ? {
-            slider_class: "lhs-active",
-            orb_color: "red",
-            close_color: "red",
-            check_color: "red",
+    // ------------------------ VIEW -------------------------
+
+    // Stylong depends on which side the orb lies
+    const colorScheme =
+        (!isDrag || orbPos === CENTER) ? "orange" :
+        orbPos < CENTER ? "red" : "green"
+
+    const CurStyles = ColorSchemes[colorScheme];
+
+    // Static/Animated depends on `isDrag`
+    const Assets = {
+        // Default items (don't depend on `isDrag` status):
+        check: <StaticAsset id="check-img" subFolder='check' color={colorScheme==='orange'?'white':colorScheme} />,
+        close: <StaticAsset id="close-img" subFolder='close' color={colorScheme==='orange'?'white':colorScheme}/>,
+        // Assets that depend on `isDrag` status for being static/animated:
+        ...(isDrag ? {
+            // use static assets
+            orb: <StaticAsset id="orb-img" subFolder='slider_circle' color={colorScheme}/>,
+            arrows: (
+                <>
+                <StaticAsset id="left-arrows-img" subFolder='left_arrows' color={colorScheme}/>
+                <StaticAsset id="right-arrows-img" subFolder='left_arrows' color={colorScheme} flip={true}/>
+                </>
+            )
         } : {
-            slider_class: "rhs-active",
-            orb_color: "green",
-            close_color: "green",
-            check_color: "green",
-        }
+            // use animations
+            orb: <GlowingCircle/>,
+            arrows: (
+                <>
+                <GlowingArrows isLeft={true}/>
+                <GlowingArrows isLeft={false}/>
+                </>
+            )
+        })
+    };
 
     return (
         <div
-            id="slider"
-            className={Styles.slider_class}
-            ref={sliderRef}
+            id="slider-div"
+            ref={sliderRef} // Use to keep track of the
+            style={{
+                backgroundImage: `linear-gradient(to bottom, ${CurStyles.sliderDark}, ${CurStyles.sliderLight}`,
+                borderColor:  CurStyles.sliderBorderLight,
+                color: CurStyles.text,
+            }}
             onMouseMove={handleMouseMove}
             onMouseUp={handleDragEnd}
-            onMouseLeave={() => setIsDrag(false)}
+            onMouseLeave={handleDragEnd}
         >
+            {/* New div for the background gradient (replaces ::after) */}
+            <span id="slider-border" style={{backgroundImage: `linear-gradient(to right, ${CurStyles.sliderBorderLight}, ${CurStyles.sliderBorderDark}, ${CurStyles.sliderBorderLight})`}}/>
+
             <div
-                id="drag-orb"
+                id="orb"
                 ref={orbRef}
+                style={{left: `${orbPos}%`,}}
                 onMouseDown={handleDragStart}
-                style={{ left: `${orbPos}%`, transform: "translate(-50%)" }}
             >
-                <ImageContainer
-                    id="orb-img"
-                    src={`StaticAssets/${Styles.orb_color}_button.png`}
-                />
+                {Assets.orb}
             </div>
-            <div id="slider-sides">
-                <div className="lhs">
-                    <ImageContainer
-                        src={`StaticAssets/${Styles.close_color}_close.png`}
-                    />
-                    <div className="text">Decline</div>
-                </div>
-                <GlowingLeftArrows />
-                <GlowingRightArrows />
-                <div className="rhs">
-                    <ImageContainer
-                        src={`StaticAssets/${Styles.check_color}_check.png`}
-                    />
-                    <div className="text">Accept</div>
-                </div>
+
+            <div id="lhs">
+                {Assets.check}
+                <div className="text">Decline</div>
+            </div>
+
+            {Assets.arrows}
+
+            <div id="rhs">
+                {Assets.close}
+                <div className="text">Accept</div>
             </div>
         </div>
     );
 }
+
+export default Slider;

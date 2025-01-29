@@ -1,69 +1,60 @@
-#slider
-    width: 400px
-
-    border: 4px solid orange
-    border-radius: 15px
-
-    padding: 20px
-    position: relative  // Any position: absolute child is constrained within the parent div (i.e. the orb)
-    user-select: none
-
-    .glowing-arrows
-        transform: scale(1.5)
-
-    background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.35), rgba(255, 255, 255, 0.15))
-
-    &.rhs-active
-        background-color: #35a55e
-        border-color:  #1e5e36
-        #slider-sides
-            color: #133a21
-
-    &.lhs-active
-        background-color: #d34646
-        border-color:  #521b1b
-        #slider-sides
-            color: #5d1d1d
-
-#slider-sides
+#slider-div
+    // LAYOUT
+    width: 30em
+    height: 4em
+    padding: 1em
+    align-content: center // center vertically
+    position: relative   // Any position: absolute child is constrained within the parent div (i.e. the orb)
+    // For displaying the two sides (left & right) w space between:
     display: flex
-    flex-direction: row
     justify-content: space-between
+    // STYLE CHOICE
+    border-radius: 1em
 
-    & > .lhs, .rhs
-        width: min-content
-        display: flex
-        gap: 15px
-        align-items: center
+// Create a gradient border
+#slider-border
+    content: ''
+    position: absolute
 
-        & > .image-container
-            width: 24px
+    margin: -0.3em           // grow the size to act like a border
+    border-radius: 1em      // match the radius of the slider-div
+    z-index: -1             // put behind
+    inset: 0                // center around
 
-#drag-orb
-    background-color: blue
-    z-index: 1000
+#lhs, #rhs
+    display: flex
+    gap: 1em
+    align-items: center
 
+#orb
     height: 100%
-    aspect-ratio: 1 / 1
-
-    position: absolute // Allows movement within the parent
-    top: 0 // relative to parent
-
-    border-radius: 50%
-
+    aspect-ratio: 1 / 1         // square shape
+    z-index: 1000               // over the other elements
+    position: absolute          // Allows movement within the parent
+    top: 0                      // relative to parent
+    transform: translate(-50%)
     &:hover
         cursor: grab
 
-    overflow: hidden // Ensures anything outside the bounds is cropped
 
+
+// Static Assets
 
 .image-container
     height: 100%
     width: 100%
-    img
+    overflow: none
+    & > img
         width: 100%
         height: 100%
-        object-fit: cover
+        object-fit: contain
 
-#orb-img
-    transform: scale(2) translateY(-3%) // fit the image approraitely
+
+#left-arrows-img, #right-arrows-img
+    transform: scale(1.9) // fit the image approraitely
+
+#orb-img > img
+    transform: scale(2.1) translateY(-3%) // fit the image approraitely
+
+#close-img, #check-img
+    width: 1.5em
